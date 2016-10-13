@@ -1,0 +1,49 @@
+<!--
+
+    THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+    FOR A PARTICULAR PURPOSE. THIS CODE AND INFORMATION ARE NOT SUPPORTED BY XEBIALABS.
+
+-->
+<synthetic xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns="http://www.xebialabs.com/deployit/synthetic"
+           xsi:schemaLocation="http://www.xebialabs.com/deployit/synthetic synthetic.xsd">
+
+    <type type="gitplus.CommitTrigger" extends="xlrelease.ReleaseTrigger" description="Triggers release when a new commit is made to a Git repository">
+        <!-- repository -->
+        <property name="server" category="Repository" referenced-type="gitplus.Server" kind="ci" description="Git server to poll"/>
+        <property name="username" category="Repository" default="" required="false" description="Custom username to override global server configuration"/>
+        <property name="password" category="Repository" default="" required="false" password="true" description="Custom password to override global server configuration"/>
+        <!-- common -->
+        <property name="owner" kind="string" required="true" description="Git owner to monitor"/>
+        <property name="repo" kind="string" required="true" description="Git repository to monitor"/>
+
+        <property name="branchRegex" category="variables" required="false" description="Only trigger if commit branch matches this regex."/>
+        <property name="fileRegex" category="variables" required="false" description="Only trigger if commit file(s) match this regex. Only a single file of the change set needs to match this regex to trigger."/>
+        <property name="triggerOnInitialPublish" category="Options" kind="boolean" default="false" required="false" description="Should suppress error when artifact not found for the given GAV coordinates. Set this to true when artifact was never published to Git and you want to trigger a release on the initial publish. Default value is 'false'"/>
+
+        <!-- output variables -->
+        <property name="commitId" category="variables" required="false" description="Id of the commit."/>
+        <property name="branch" category="variables" required="false" description="Branch where the commit occurred."/>
+        <property name="committerEmail" category="variables" required="false" description="Committer email."/>
+    </type>
+
+    <type type="gitplus.TagCommit" extends="xlrelease.PythonScript" description="Create a release based on a commit id (SHA).">
+        <!-- repository -->
+        <property name="server" category="input" referenced-type="gitplus.Server" kind="ci" description="Git server"/>
+        <property name="username" category="input" default="" required="false" description="Custom username to override global server configuration"/>
+        <property name="password" category="input" default="" required="false" password="true" description="Custom password to override global server configuration"/>
+        <!-- common -->
+        <property name="owner" category="input" kind="string" required="true" description="Git organization"/>
+        <property name="repo" category="input" kind="string" required="true" description="Git repository"/>
+        <!-- tag info -->
+        <property name="commitId" category="input" required="false" description="SHA of commit to tag."/>
+        <property name="releaseName" category="input" required="false" description="Release name."/>
+        <property name="tagName" category="input" required="false" description="Tag name.  Normally 'V' plus version number."/>
+        <property name="tagDescription" category="input" required="false" description="Tag description."/>
+    </type>
+
+    <type type="gitplus.Server" extends="configuration.HttpConnection">
+    </type>
+
+</synthetic>
