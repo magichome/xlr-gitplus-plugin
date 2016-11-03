@@ -21,6 +21,7 @@
         <property name="branchRegex" category="Options" kind="string" required="false" description="Only trigger if commit branch matches this regex."/>
         <property name="fileRegex" category="Options" kind="string" required="false" description="Only trigger if commit file(s) match this regex. Only a single file of the change set needs to match this regex to trigger."/>
         <property name="triggerOnInitialPublish" category="Options" kind="boolean" default="false" required="false" description="Should suppress error when artifact not found for the given GAV coordinates. Set this to true when artifact was never published to Git and you want to trigger a release on the initial publish. Default value is 'false'"/>
+        <property name="debug" category="Options" kind="boolean" default="false" required="false" description="Increased logging so you know what's going on in the trigger. Useful for debugging.  Default value is 'false'"/>
 
         <!-- output variables -->
         <property name="repoPath" category="variables" required="false" description="Repository path."/>

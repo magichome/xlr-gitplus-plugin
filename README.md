@@ -11,6 +11,8 @@ The XL Release GIT Plus plugin provides a couple new features.
 	* Monitor a GIT repository for commits to any branch.  Only triggers a release when the branch and/or changed files match user define regex.
 * gitplus.TagCommit
 	* Tag a commit in GIT
+* gitplus.PullRequest
+	* Create a pull request from one branch to another.  This is useful after successful deployment of a release candidate.
 
 # Requirements #
 
