@@ -24,74 +24,87 @@ if server is None:
     print "No Git server provided."
     sys.exit(1)
 
-if commitId == triggerState:
-    return
+repoPath = '%s/%s' % (owner, repo) # helper var for downstream tasks, not used here.
 
 request = HttpRequest(server, username, password)
 context = "/api/v3/repos/%s/%s" % (owner, repo)
-commit_path = "%s/commits/%s" % (context, commitId)
+
+# get summary info about most recent commit
+commit_path = "%s/commits?per_page=1" % (context)
 response = request.get(commit_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
 
 if not response.isSuccessful():
     if response.status == 404 and triggerOnInitialPublish:
-        print "Repository '%s:%s' not found in Git. Ignoring." % (owner, repo)
-        # the following initialisation is to enable a scenario where we wish
-        # to trigger a release on a first publish of an artifact to Git
-        if not triggerState:
-            branch = commitId = triggerState = committerEmail = 'unknown'
+        # repo doesn't exist but that's ok.
+        print "Repo not found.  Will trigger on initial publish."
     else:
-        print "Failed to fetch branch information from Git server %s" % server['url']
+        print "Failed to fetch commit information from Git server %s" % server['url']
         response.errorDump()
         sys.exit(1)
+
 else:
+    # list of commits
     info = json.loads(response.response)
 
-    committerEmail = info["commit"]["committer"]["email"]
+    if len(info) > 0:
+        # most recent commit is first (I believe)
+        commitId = info[0]["sha"]
 
-    match = false
+        # only do the follow checks if this is a new commit
+        if triggerState != commitId:
+            commitMessage = info[0]["commit"]["message"]
+            committerEmail = info[0]["commit"]["committer"]["email"]
+            committerName = info[0]["commit"]["committer"]["name"]
+            # assume match
+            match = True
 
-    # check files
-    if fileRegex:
-        pfile = re.compile(fileRegex)
-        for f in info["files"]:
-            if pfile.match(f["filename"]):
-                match = true
-                break
-    else:
-        match = true
+            # optionally filter by file or branch
+            if fileRegex or branchRegex:
+                # get detail info about commit
+                commit_path = "%s/commits/%s" % (context, commitId)
+                response = request.get(commit_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
 
-    # check branch
-    if match and branchRegex:
-        match = false
+                if not response.isSuccessful():
+                    print "Failed to fetch commit information for %s" % commitId
+                    response.errorDump()
+                    sys.exit(1)
 
-        branches_path = "%s/branches" % context
-        response = request.get(branches_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
+                info = json.loads(response.response)
+                match = False
 
-        if not response.isSuccessful():
-            print "Failed to fetch branch information from Git server %s" % server['url']
-            response.errorDump()
-            sys.exit(1)
+                # check files first because we already have them
+                if fileRegex:
+                    pfile = re.compile(fileRegex)
+                    for f in info["files"]:
+                        if pfile.match(f["filename"]):
+                            match = True
+                            break
+                else:
+                    match = True
 
+                # check branch
+                if match and branchRegex:
+                    match = False
 
-....
-    # build a map of the commit ids for each branch
-    newCommit = {}
-    for branch in info["values"]:
-        branchname = branch["displayId"]
-        lastcommit = branch["latestCommit"]
-        newCommit[branchname] = lastcommit
+                    branches_path = "%s/branches" % context
+                    response = request.get(branches_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
 
-    # trigger state is perisisted as json
-    newTriggerState = json.dumps(newCommit)
+                    if not response.isSuccessful():
+                        print "Failed to fetch branch information from Git server %s" % server['url']
+                        response.errorDump()
+                        sys.exit(1)
 
-    if triggerState != newTriggerState:
-        if len(triggerState) == 0:
-            oldCommit = {}
-        else:
-            oldCommit = json.loads(triggerState)
+                    info = json.loads(response.response)
 
-        branch, commitId = findNewCommit(oldCommit, newCommit)
+                    # loop over branches to find the one that has our commit id
+                    pfile = re.compile(branchRegex)
+                    for b in info:
+                        if b["commit"]["sha"] == commitId:
+                            if pfile.match(b["name"]):
+                                match = True
+                                break
 
-        triggerState = newTriggerState
+            if match:
+                triggerState = commitId
 
-        print("Git triggered for %s-%s" % (branch, commitId))
+                print("Git triggered for %s" % (commitId))

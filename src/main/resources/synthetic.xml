@@ -18,13 +18,15 @@
         <property name="owner" kind="string" required="true" description="Git owner to monitor"/>
         <property name="repo" kind="string" required="true" description="Git repository to monitor"/>
 
-        <property name="branchRegex" category="variables" required="false" description="Only trigger if commit branch matches this regex."/>
-        <property name="fileRegex" category="variables" required="false" description="Only trigger if commit file(s) match this regex. Only a single file of the change set needs to match this regex to trigger."/>
+        <property name="branchRegex" category="Options" kind="string" required="false" description="Only trigger if commit branch matches this regex."/>
+        <property name="fileRegex" category="Options" kind="string" required="false" description="Only trigger if commit file(s) match this regex. Only a single file of the change set needs to match this regex to trigger."/>
         <property name="triggerOnInitialPublish" category="Options" kind="boolean" default="false" required="false" description="Should suppress error when artifact not found for the given GAV coordinates. Set this to true when artifact was never published to Git and you want to trigger a release on the initial publish. Default value is 'false'"/>
 
         <!-- output variables -->
+        <property name="repoPath" category="variables" required="false" description="Repository path."/>
         <property name="commitId" category="variables" required="false" description="Id of the commit."/>
-        <property name="branch" category="variables" required="false" description="Branch where the commit occurred."/>
+        <property name="commitMessage" category="variables" required="false" description="Commit message."/>
+        <property name="committerName" category="variables" required="false" description="Committer name."/>
         <property name="committerEmail" category="variables" required="false" description="Committer email."/>
     </type>
 
@@ -41,6 +43,21 @@
         <property name="releaseName" category="input" required="false" description="Release name."/>
         <property name="tagName" category="input" required="false" description="Tag name.  Normally 'V' plus version number."/>
         <property name="tagDescription" category="input" required="false" description="Tag description."/>
+    </type>
+
+    <type type="gitplus.PullRequest" extends="xlrelease.PythonScript" description="Create a pull request from a branch to master.">
+        <!-- repository -->
+        <property name="server" category="input" referenced-type="gitplus.Server" kind="ci" description="Git server"/>
+        <property name="username" category="input" default="" required="false" description="Custom username to override global server configuration"/>
+        <property name="password" category="input" default="" required="false" password="true" description="Custom password to override global server configuration"/>
+        <!-- common -->
+        <property name="owner" category="input" kind="string" required="true" description="Git organization"/>
+        <property name="repo" category="input" kind="string" required="true" description="Git repository"/>
+        <!-- tag info -->
+        <property name="title" category="input" required="true" description="Pull request title."/>
+        <property name="branch" category="input" required="true" description="Name of the branch where changes are implemented."/>
+        <property name="base" category="input" required="true" description="The name of the branch you want the changes pulled into."/>
+        <property name="body" category="input" required="false" description="The contents of the pull request."/>
     </type>
 
     <type type="gitplus.Server" extends="configuration.HttpConnection">
