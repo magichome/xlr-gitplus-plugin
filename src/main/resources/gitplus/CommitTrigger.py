@@ -24,6 +24,9 @@ if server is None:
     print "No Git server provided."
     sys.exit(1)
 
+if debug:
+    print 'Beginning tiggerState %s' % triggerState
+
 repoPath = '%s/%s' % (owner, repo) # helper var for downstream tasks, not used here.
 
 request = HttpRequest(server, username, password)
@@ -31,6 +34,8 @@ context = "/api/v3/repos/%s/%s" % (owner, repo)
 
 # get summary info about most recent commit
 commit_path = "%s/commits?per_page=1" % (context)
+if branch:
+    commit_path = "%s&sha=%s" % (commit_path, branch)
 if debug:
     print 'Checking commits.  Request: %s' % commit_path
 
@@ -52,7 +57,7 @@ else:
     info = json.loads(response.response)
 
     if len(info) > 0:
-        # most recent commit is first (I believe)
+        # most recent commit is first
         commitId = info[0]["sha"]
         if debug:
             print 'Trigger State: %s, CommitId %s' % (triggerState, commitId)
@@ -65,12 +70,12 @@ else:
             # assume match
             match = True
 
-            # optionally filter by file or branch
-            if fileRegex or branchRegex:
+            # optionally filter by file
+            if fileRegex:
                 # get detail info about commit
                 commit_path = "%s/commits/%s" % (context, commitId)
                 if debug:
-                    print 'Checking file or branch regex. Request: %s' % commit_path
+                    print 'Checking file regex. Request: %s' % commit_path
                 response = request.get(commit_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
 
                 if not response.isSuccessful():
@@ -97,40 +102,10 @@ else:
                 else:
                     match = True
 
-                # check branch
-                if match and branchRegex:
-                    match = False
-
-                    branches_path = "%s/branches" % context
-                    if debug:
-                        print 'Checking branch regex. Request: %s' % branches_path
-                    response = request.get(branches_path, contentType = 'application/json', accept = 'application/vnd.github.v3+json')
-
-                    if not response.isSuccessful():
-                        print "Failed to fetch branch information from Git server %s" % server['url']
-                        response.errorDump()
-                        sys.exit(1)
-
-                    info = json.loads(response.response)
-
-                    # loop over branches to find the one that has our commit id
-                    pfile = re.compile(branchRegex)
-                    for b in info:
-                        if debug:
-                            print '..checking branch %s with sha %s' % (b["name"], b["commit"]["sha"])
-                        if b["commit"]["sha"] == commitId:
-                            if pfile.match(b["name"]):
-                                if debug:
-                                    print '....matched'
-                                match = True
-                                break
-                    if debug:
-                        print 'Branch regex %s match: %s' % (branchRegex, match)
-
             if match:
                 triggerState = commitId
 
                 print("Git triggered for %s" % (commitId))
 
-            if debug:
-                print 'Final result. Match: %s' % match
+if debug:
+    print 'Resulting tiggerState %s' % triggerState
